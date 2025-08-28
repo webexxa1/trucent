@@ -1,26 +1,299 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>JSX on GitHub Pages</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Important for project sites under /REPO/: -->
-    <base href="/trucent/">
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Trucent Partner Prototype</title>
+    <!-- Tailwind CDN (OK for prototypes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // add your brand colors so classes like bg-brand-blue work
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { brand: { blue: "#0090C0", green: "#8DC63E" } }
+          }
+        }
+      }
+    </script>
   </head>
-  <body>
+  <body class="min-h-screen">
     <div id="root"></div>
 
-    <!-- Your JSX file you added to the same folder -->
-    <script type="text/babel" data-presets="react" src="App.jsx"></script>
+    <!-- Everything below runs as an ES module -->
+    <script type="module">
+      import React, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
+      import { createRoot } from "https://esm.sh/react-dom@18/client";
+      import { motion } from "https://esm.sh/framer-motion@11";
+      import {
+        Droplets, Activity, Factory, Leaf, ArrowRight, Moon, Sun, ShieldCheck,
+        Gauge, LineChart as LineChartIcon, BarChart4, Calculator, DollarSign,
+        Percent, TrendingUp
+      } from "https://esm.sh/lucide-react@0.441.0";
+      import {
+        LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+        Legend, AreaChart, Area
+      } from "https://esm.sh/recharts@2.12.7";
 
-    <!-- Mount -->
-    <script type="text/babel" data-presets="react">
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App/>);
+      // --- Sparkles fallback
+      function SparklesIcon({ className = "w-4 h-4", style }) {
+        return (
+          React.createElement("svg", { className, style, viewBox:"0 0 24 24", fill:"none", xmlns:"http://www.w3.org/2000/svg", "aria-hidden":"true" },
+            React.createElement("path", { d:"M12 2l1.8 4.6L18 8.4l-4.2 1.8L12 15l-1.8-4.8L6 8.4l4.2-1.8L12 2z", stroke:"currentColor", strokeWidth:"1.5", strokeLinejoin:"round" }),
+            React.createElement("path", { d:"M4 14l1 2.6L8 18l-3 1.4L4 22l-1-2.6L0 18l3-1.4L4 14zM20 10l.9 2.2L24 13l-3.1 1L20 16l-.9-2.1L16 13l3.1-.8L20 10z", stroke:"currentColor", strokeWidth:"1.2", strokeLinejoin:"round" })
+          )
+        );
+      }
+
+      // --- Small helpers converted to React without JSX so the browser can run it
+      const KpiCard = ({ icon: Icon, label, value, sub }) =>
+        React.createElement("div", { className:"rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-zinc-800 p-5 shadow-sm backdrop-blur" },
+          React.createElement("div", { className:"flex items-center gap-3" },
+            React.createElement("div", { className:"p-2 rounded-xl bg-brand-blue/10 border border-brand-blue/20" },
+              React.createElement(Icon, { className:"w-5 h-5 text-brand-blue" })
+            ),
+            React.createElement("div", null,
+              React.createElement("p", { className:"text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400" }, label),
+              React.createElement("p", { className:"text-2xl font-semibold leading-tight" }, value),
+              sub ? React.createElement("p", { className:"text-xs mt-1 text-brand-green" }, sub) : null
+            )
+          )
+        );
+
+      const Section = ({ id, eyebrow, title, subtitle, children, actions }) =>
+        React.createElement("section", { id, className:"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" },
+          React.createElement("div", { className:"mb-8" },
+            eyebrow ? React.createElement("div", { className:"text-xs uppercase tracking-[0.2em] font-semibold text-brand-blue" }, eyebrow) : null,
+            title ? React.createElement("h2", { className:"mt-2 text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50" }, title) : null,
+            subtitle ? React.createElement("p", { className:"mt-3 text-zinc-600 dark:text-zinc-300 max-w-3xl" }, subtitle) : null,
+            actions ? React.createElement("div", { className:"mt-6 flex flex-wrap gap-3" }, actions) : null
+          ),
+          children
+        );
+
+      const genSeries = () => {
+        const base = 1200;
+        return Array.from({ length: 12 }).map((_, i) => ({
+          month: new Date(2024, i, 1).toLocaleString("en-US", { month: "short" }),
+          gallons: Math.round(base + Math.sin(i / 1.5) * 200 + i * 40),
+          uptime: Math.round(97 + Math.sin(i / 2) * 1.2 + i / 100),
+          waste: Math.max(0, Math.round(28 - i * 1.6 + Math.cos(i) * 2)),
+        }));
+      };
+      const demoSeries = genSeries();
+
+      function computeROI(inputs) {
+        const disposal   = Number(inputs.disposal)   || 0;
+        const consum     = Number(inputs.consumables)|| 0;
+        const reduction  = Number(inputs.reduction)  || 0;
+        const impl       = Math.max(0, Number(inputs.impl) || 0);
+        const opexDelta  = Number(inputs.opexDelta)  || 0;
+        const rate       = Math.max(0, Number(inputs.rate) || 0);
+        const horizon    = Math.max(0, Number(inputs.horizon) || 0);
+
+        const baseMonthly = (disposal + consum) * (reduction / 100);
+        const monthlySavings = baseMonthly - Math.max(0, opexDelta);
+        const paybackMonths  = monthlySavings > 0 ? impl / monthlySavings : Infinity;
+        const roi12          = impl > 0 ? (monthlySavings * 12 - impl) / impl : 0;
+
+        const r = rate / 100 / 12;
+        const months = Math.max(1, Math.round(horizon * 12));
+        let npv = -impl;
+        let cum = -impl;
+        const roiSeries = [];
+        for (let m = 1; m <= months; m++) {
+          const cf = monthlySavings;
+          npv += cf / Math.pow(1 + r, m);
+          cum += cf;
+          roiSeries.push({ month: `M${m}`, cum: Math.round(cum) });
+        }
+        return { monthlySavings, paybackMonths, roi12, npv, roiSeries };
+      }
+
+      const currency = (n) => Number.isFinite(n)
+        ? n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+        : "—";
+
+      function ROICalc() {
+        const [inputs, setInputs] = useState({
+          disposal: 12000, consumables: 8000, reduction: 35, impl: 65000,
+          opexDelta: -1500, rate: 10, horizon: 3
+        });
+        const onNum = (k) => (e) => setInputs(v => ({ ...v, [k]: Number(e.target.value) }));
+        const { monthlySavings, paybackMonths, roi12, npv, roiSeries } = useMemo(() => computeROI(inputs), [inputs]);
+
+        return React.createElement("div", { className:"grid grid-cols-1 lg:grid-cols-5 gap-6" },
+          React.createElement("div", { className:"lg:col-span-2 rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-5" },
+            React.createElement("div", { className:"font-semibold mb-3 flex items-center gap-2" },
+              React.createElement(Calculator, { className:"w-4 h-4 text-brand-blue" }),
+              " ROI Inputs"
+            ),
+            React.createElement("div", { className:"grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm" },
+              ["disposal","consumables","reduction","impl","opexDelta","rate","horizon"].map((k, i) =>
+                React.createElement("label", { key:i, className:"grid gap-1" },
+                  React.createElement("span", null,
+                    {
+                      disposal:"Baseline waste & surcharges ($/mo)",
+                      consumables:"Consumables (coolant/filters) ($/mo)",
+                      reduction:"Expected reduction (%)",
+                      impl:"Implementation cost ($ one-time)",
+                      opexDelta:"Monthly OPEX change ($/mo)",
+                      rate:"Discount rate (%/yr)",
+                      horizon:"Horizon (years)"
+                    }[k]
+                  ),
+                  React.createElement("input", {
+                    type:"number", value: inputs[k], onChange:onNum(k),
+                    className:"px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                  }),
+                  k==="opexDelta" ? React.createElement("span", { className:"text-xs text-zinc-500" }, "Positive = extra cost, negative = extra savings.") : null
+                )
+              )
+            )
+          ),
+          React.createElement("div", { className:"lg:col-span-3 grid grid-cols-1 gap-4" },
+            React.createElement("div", { className:"rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-5" },
+              React.createElement("div", { className:"font-semibold mb-3 flex items-center gap-2" },
+                React.createElement(TrendingUp, { className:"w-4 h-4 text-brand-blue" }), " Results"
+              ),
+              React.createElement("div", { className:"grid grid-cols-2 md:grid-cols-4 gap-4" },
+                React.createElement(KpiCard, { icon:DollarSign, label:"Monthly Savings", value:currency(monthlySavings) }),
+                React.createElement(KpiCard, { icon:Percent, label:"12-mo ROI", value:(roi12*100).toFixed(0)+"%" }),
+                React.createElement(KpiCard, { icon:Activity, label:"Payback", value:Number.isFinite(paybackMonths)? paybackMonths.toFixed(1)+" mo" : "—" }),
+                React.createElement(KpiCard, { icon:ShieldCheck, label:"NPV (horizon)", value:currency(npv) })
+              )
+            ),
+            React.createElement("div", { className:"rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-4" },
+              React.createElement("div", { className:"font-semibold mb-2 flex items-center gap-2" },
+                React.createElement(LineChartIcon, { className:"w-4 h-4 text-brand-blue" }), " Cumulative Cashflow"
+              ),
+              React.createElement("div", { className:"h-40" },
+                React.createElement(ResponsiveContainer, { width:"100%", height:"100%" },
+                  React.createElement(AreaChart, { data: computeROI(inputs).roiSeries, margin:{ top:10, right:10, left:0, bottom:0 } },
+                    React.createElement("defs", null,
+                      React.createElement("linearGradient", { id:"g2", x1:"0", y1:"0", x2:"0", y2:"1" },
+                        React.createElement("stop", { offset:"5%", stopColor:"currentColor", stopOpacity:0.35 }),
+                        React.createElement("stop", { offset:"95%", stopColor:"currentColor", stopOpacity:0.05 })
+                      )
+                    ),
+                    React.createElement(CartesianGrid, { strokeDasharray:"3 3", opacity:0.2 }),
+                    React.createElement(XAxis, { dataKey:"month" }),
+                    React.createElement(YAxis, null),
+                    React.createElement(Tooltip, null),
+                    React.createElement(Area, { type:"monotone", dataKey:"cum", stroke:"currentColor", fillOpacity:1, fill:"url(#g2)" })
+                  )
+                )
+              )
+            )
+          )
+        );
+      }
+
+      function App() {
+        const [dark, setDark] = useState(true);
+        useEffect(() => {
+          const root = document.documentElement;
+          dark ? root.classList.add("dark") : root.classList.remove("dark");
+        }, [dark]);
+
+        const totals = useMemo(() => ({
+          uptime:"99.2%", waste:"-36%", gallons:"14,820/mo", co2:"-28.4t/yr"
+        }), []);
+
+        return (
+          React.createElement("div", { className:"min-h-screen bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-950 dark:to-zinc-900 text-zinc-900 dark:text-zinc-50" },
+            React.createElement("div", { className:"border-b border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 backdrop-blur sticky top-0 z-40" },
+              React.createElement("div", { className:"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between" },
+                React.createElement("div", { className:"flex items-center gap-2 font-semibold" },
+                  React.createElement("div", { className:"w-8 h-8 rounded-xl bg-brand-blue grid place-items-center text-white" },
+                    React.createElement(Droplets, { className:"w-4 h-4" })
+                  ),
+                  "Trucent Partner Prototype"
+                ),
+                React.createElement("div", { className:"flex items-center gap-3" },
+                  React.createElement("a", { href:"#portal", className:"text-sm px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700" }, "Client Portal"),
+                  React.createElement("button", { onClick:()=>setDark(d=>!d), className:"text-sm px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 inline-flex items-center gap-2" },
+                    dark ? React.createElement(Sun, { className:"w-4 h-4" }) : React.createElement(Moon, { className:"w-4 h-4" }),
+                    dark ? "Light" : "Dark"
+                  ),
+                  React.createElement("a", { href:"#contact", className:"text-sm px-3 py-1.5 rounded-lg bg-brand-blue hover:bg-brand-blue/80 text-white inline-flex items-center gap-2" },
+                    React.createElement(ArrowRight, { className:"w-4 h-4" }), "Request a Pilot"
+                  )
+                )
+              )
+            ),
+            React.createElement(Section, {
+              eyebrow:"Tailored for Trucent",
+              title: React.createElement(React.Fragment, null, "Fluid Purification ", React.createElement("span", { className:"text-brand-blue" }, "meets"), " Real-Time Data"),
+              subtitle:"A clickable prototype to demonstrate how an integrated website + client portal can accelerate Trucent's sales cycle, prove ROI with live KPIs, and strengthen customer loyalty.",
+              actions: [
+                React.createElement("a", { key:1, href:"#portal", className:"px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/80 text-white inline-flex items-center gap-2" },
+                  React.createElement(LineChartIcon, { className:"w-4 h-4" }), "Explore Portal"
+                ),
+                React.createElement("a", { key:2, href:"#cases", className:"px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 inline-flex items-center gap-2" },
+                  React.createElement(BarChart4, { className:"w-4 h-4" }), "See Case Studies"
+                )
+              ]
+            },
+              React.createElement("div", { className:"grid grid-cols-1 lg:grid-cols-5 gap-5" },
+                React.createElement("div", { className:"lg:col-span-3" },
+                  /* keep your BeforeAfter here if you convert it to createElement; omitted for brevity */
+                  React.createElement("div", { className:"rounded-2xl border border-zinc-200 dark:border-zinc-800 p-8 text-zinc-500" }, "Before/After demo (omitted in zero-build sample)")
+                ),
+                React.createElement("div", { className:"lg:col-span-2 grid grid-cols-2 gap-4" },
+                  React.createElement(KpiCard, { icon:Activity, label:"Uptime", value:totals.uptime, sub:"↑ +1.2% YoY" }),
+                  React.createElement(KpiCard, { icon:Droplets, label:"Gallons Processed", value:totals.gallons, sub:"↑ +9.4% YoY" }),
+                  React.createElement(KpiCard, { icon:Factory, label:"Waste Reduced", value:totals.waste, sub:"↓ -14% OPEX" }),
+                  React.createElement(KpiCard, { icon:Leaf, label:"CO₂e Avoided", value:totals.co2, sub:"Scope 1 & 2" }),
+                )
+              )
+            ),
+            React.createElement(Section, {
+              id:"portal",
+              eyebrow:"Client Experience",
+              title:"Live portal that proves ROI",
+              subtitle:"Give customers a real-time view of equipment health, compliance, and savings."
+            },
+              React.createElement("div", { className:"grid grid-cols-1 lg:grid-cols-7 gap-6" },
+                React.createElement("div", { className:"lg:col-span-4 rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-4" },
+                  React.createElement("div", { className:"flex items-center justify-between mb-3" },
+                    React.createElement("div", { className:"font-semibold flex items-center gap-2" },
+                      React.createElement(Gauge, { className:"w-4 h-4 text-brand-blue"}), " System Throughput (gallons/mo)"
+                    ),
+                    React.createElement("div", { className:"text-xs text-zinc-500" }, "Demo data")
+                  ),
+                  React.createElement("div", { className:"h-64" },
+                    React.createElement(ResponsiveContainer, { width:"100%", height:"100%" },
+                      React.createElement(AreaChart, { data: demoSeries, margin:{ top:10, right:10, left:0, bottom:0 } },
+                        React.createElement("defs", null,
+                          React.createElement("linearGradient", { id:"g1", x1:"0", y1:"0", x2:"0", y2:"1" },
+                            React.createElement("stop", { offset:"5%", stopColor:"currentColor", stopOpacity:0.35 }),
+                            React.createElement("stop", { offset:"95%", stopColor:"currentColor", stopOpacity:0.05 })
+                          )
+                        ),
+                        React.createElement(CartesianGrid, { strokeDasharray:"3 3", opacity:0.2 }),
+                        React.createElement(XAxis, { dataKey:"month" }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Area, { type:"monotone", dataKey:"gallons", stroke:"currentColor", fillOpacity:1, fill:"url(#g1)" })
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            React.createElement(Section, { id:"roi", eyebrow:"Financials", title:"ROI calculator", subtitle:"Adjust assumptions and see payback/NPV." },
+              React.createElement(ROICalc, null)
+            ),
+            React.createElement("footer", { className:"py-10 text-center text-sm text-zinc-500" },
+              "Prototype for discussion purposes only. Not affiliated with Trucent."
+            )
+          )
+        );
+      }
+
+      const root = createRoot(document.getElementById("root"));
+      root.render(React.createElement(App));
     </script>
   </body>
 </html>
