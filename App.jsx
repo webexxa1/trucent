@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -30,26 +31,21 @@ import {
   Area,
 } from "recharts";
 
-// ==========================================================
-// Tailwind Custom Theme Colors (configure in tailwind.config.js)
-// ==========================================================
-// theme: {
-//   extend: {
-//     colors: {
-//       brand: {
-//         blue: "#0090C0", // Trucent primary cyan-blue
-//         green: "#8DC63E", // Trucent accent green
-//       }
-//     }
-//   }
-// }
-// Then use classes like: bg-brand-blue hover:bg-brand-blue/80 text-brand-green
+/* ==========================================================
+   Tailwind Custom Theme Colors (configure in tailwind.config.js)
+   ==========================================================
+   // theme: {
+   //   extend: {
+   //     colors: {
+   //       brand: { blue: "#0090C0", green: "#8DC63E" }
+   //     }
+   //   }
+   // }
+*/
 
 // ==========================================================
-// Local icons / fallbacks
+// Local Sparkles fallback (avoids older lucide versions breaking)
 // ==========================================================
-// Some environments pin an older lucide-react where `Sparkles` isn't exported.
-// To avoid build failures, we provide a local fallback icon and use it instead of importing Sparkles.
 function SparklesIcon({ className = "w-4 h-4", style }) {
   return (
     <svg
@@ -79,7 +75,7 @@ function KpiCard({ icon: Icon, label, value, sub }) {
         <div>
           <p className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{label}</p>
           <p className="text-2xl font-semibold leading-tight">{value}</p>
-          {sub && <p className="text-xs mt-1 text-brand-green">{sub}</p>}
+          {sub ? <p className="text-xs mt-1 text-brand-green">{sub}</p> : null}
         </div>
       </div>
     </div>
@@ -90,16 +86,14 @@ function Section({ id, eyebrow, title, subtitle, children, actions }) {
   return (
     <section id={id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
-        {eyebrow && (
+        {eyebrow ? (
           <div className="text-xs uppercase tracking-[0.2em] font-semibold text-brand-blue">{eyebrow}</div>
-        )}
-        {title && (
+        ) : null}
+        {title ? (
           <h2 className="mt-2 text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50">{title}</h2>
-        )}
-        {subtitle && (
-          <p className="mt-3 text-zinc-600 dark:text-zinc-300 max-w-3xl">{subtitle}</p>
-        )}
-        {actions && <div className="mt-6 flex flex-wrap gap-3">{actions}</div>}
+        ) : null}
+        {subtitle ? <p className="mt-3 text-zinc-600 dark:text-zinc-300 max-w-3xl">{subtitle}</p> : null}
+        {actions ? <div className="mt-6 flex flex-wrap gap-3">{actions}</div> : null}
       </div>
       {children}
     </section>
@@ -147,7 +141,7 @@ function BeforeAfter() {
   );
 }
 
-// Demo chart data
+// Demo chart data (renamed to avoid shadowing with ROI series)
 const genSeries = () => {
   const base = 1200;
   return Array.from({ length: 12 }).map((_, i) => ({
@@ -157,7 +151,7 @@ const genSeries = () => {
     waste: Math.max(0, Math.round(28 - i * 1.6 + Math.cos(i) * 2)),
   }));
 };
-const series = genSeries();
+const demoSeries = genSeries();
 
 function LeadForm() {
   const [sent, setSent] = useState(false);
@@ -167,44 +161,23 @@ function LeadForm() {
   };
   return (
     <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <input
-        required
-        placeholder="Full name"
-        className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-      />
-      <input
-        required
-        type="email"
-        placeholder="Work email"
-        className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-      />
-      <input
-        placeholder="Company"
-        className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-      />
-      <select className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900">
-        <option>Industry</option>
+      <input required placeholder="Full name" className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+      <input required type="email" placeholder="Work email" className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+      <input placeholder="Company" className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
+      <select className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" defaultValue="Industry">
+        <option disabled>Industry</option>
         <option>Automotive</option>
         <option>Food & Beverage</option>
         <option>Energy</option>
         <option>Metals</option>
         <option>Pharma</option>
       </select>
-      <textarea
-        placeholder="What would you like to pilot?"
-        className="md:col-span-2 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-        rows={4}
-      />
+      <textarea placeholder="What would you like to pilot?" className="md:col-span-2 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" rows={4} />
       <div className="md:col-span-2 flex gap-3 items-center">
-        <button
-          type="submit"
-          className="px-5 py-3 rounded-xl bg-brand-blue hover:bg-brand-blue/80 text-white font-semibold inline-flex items-center gap-2"
-        >
+        <button type="submit" className="px-5 py-3 rounded-xl bg-brand-blue hover:bg-brand-blue/80 text-white font-semibold inline-flex items-center gap-2">
           <SparklesIcon className="w-4 h-4" /> Request a Pilot
         </button>
-        {sent && (
-          <span className="text-brand-green">Thanks! We'll follow up with an NDA & next steps.</span>
-        )}
+        {sent && <span className="text-brand-green">Thanks! We'll follow up with an NDA & next steps.</span>}
       </div>
     </form>
   );
@@ -214,47 +187,56 @@ function LeadForm() {
 // ROI Calculator (pure helper + UI)
 // ==========================================================
 export function computeROI(inputs) {
-  const baseMonthly = (inputs.disposal + inputs.consumables) * (inputs.reduction / 100);
-  // If opexDelta is negative (extra savings), we don't reduce savings again (no double‑count)
-  const monthlySavings = baseMonthly - Math.max(0, inputs.opexDelta);
+  // Force numeric coercion and sane defaults to avoid NaN propagation
+  const disposal = Number(inputs.disposal) || 0;
+  const consumables = Number(inputs.consumables) || 0;
+  const reduction = Number(inputs.reduction) || 0;
+  const impl = Math.max(0, Number(inputs.impl) || 0);
+  const opexDelta = Number(inputs.opexDelta) || 0;
+  const rate = Math.max(0, Number(inputs.rate) || 0);
+  const horizonYears = Math.max(0, Number(inputs.horizon) || 0);
 
-  const paybackMonths = monthlySavings > 0 ? inputs.impl / monthlySavings : Infinity;
-  const roi12 = inputs.impl > 0 ? (monthlySavings * 12 - inputs.impl) / inputs.impl : 0;
+  const baseMonthly = (disposal + consumables) * (reduction / 100);
+  // If opexDelta is negative (extra savings), we do NOT subtract it again
+  const monthlySavings = baseMonthly - Math.max(0, opexDelta);
 
-  const r = inputs.rate / 100 / 12; // monthly discount
-  const months = Math.max(1, Math.round(inputs.horizon * 12));
-  let npv = -inputs.impl;
-  let cum = -inputs.impl;
-  const series = [];
+  const paybackMonths = monthlySavings > 0 ? impl / monthlySavings : Infinity;
+  const roi12 = impl > 0 ? (monthlySavings * 12 - impl) / impl : 0;
+
+  const r = rate / 100 / 12; // monthly discount
+  const months = Math.max(1, Math.round(horizonYears * 12));
+
+  let npv = -impl;
+  let cum = -impl;
+  const roiSeries = [];
   for (let m = 1; m <= months; m++) {
     const cf = monthlySavings;
     npv += cf / Math.pow(1 + r, m);
     cum += cf;
-    series.push({ month: `M${m}`, cum: Math.round(cum) });
+    roiSeries.push({ month: `M${m}`, cum: Math.round(cum) });
   }
-  return { monthlySavings, paybackMonths, roi12, npv, series };
+  return { monthlySavings, paybackMonths, roi12, npv, roiSeries };
 }
 
 function currency(n) {
-  if (Number.isFinite(n)) {
-    return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-  }
-  return "—";
+  return Number.isFinite(n)
+    ? n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+    : "—";
 }
 
 function ROICalc() {
   const [inputs, setInputs] = useState({
-    disposal: 12000, // $/mo baseline waste, hauling, surcharges
-    consumables: 8000, // $/mo coolant/filters/chemicals
-    reduction: 35, // % savings expected
-    impl: 65000, // one-time implementation cost
-    opexDelta: -1500, // monthly net OPEX change (+cost / -savings). Negative => extra savings
-    rate: 10, // annual discount rate %
-    horizon: 3, // years
+    disposal: 12000,
+    consumables: 8000,
+    reduction: 35,
+    impl: 65000,
+    opexDelta: -1500,
+    rate: 10,
+    horizon: 3,
   });
 
   const onNum = (k) => (e) => setInputs((v) => ({ ...v, [k]: Number(e.target.value) }));
-  const { monthlySavings, paybackMonths, roi12, npv, series } = useMemo(() => computeROI(inputs), [inputs]);
+  const { monthlySavings, paybackMonths, roi12, npv, roiSeries } = useMemo(() => computeROI(inputs), [inputs]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -276,7 +258,7 @@ function ROICalc() {
             <input type="number" value={inputs.reduction} onChange={onNum("reduction")} className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
           </label>
           <label className="grid gap-1">
-            <span>Implementation cost ($ one‑time)</span>
+            <span>Implementation cost ($ one-time)</span>
             <input type="number" value={inputs.impl} onChange={onNum("impl")} className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" />
           </label>
           <label className="grid gap-1">
@@ -302,7 +284,7 @@ function ROICalc() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard icon={DollarSign} label="Monthly Savings" value={currency(monthlySavings)} />
-            <KpiCard icon={Percent} label="12‑mo ROI" value={(roi12 * 100).toFixed(0) + "%"} />
+            <KpiCard icon={Percent} label="12-mo ROI" value={(roi12 * 100).toFixed(0) + "%"} />
             <KpiCard icon={Activity} label="Payback" value={Number.isFinite(paybackMonths) ? paybackMonths.toFixed(1) + " mo" : "—"} />
             <KpiCard icon={ShieldCheck} label="NPV (horizon)" value={currency(npv)} />
           </div>
@@ -313,7 +295,7 @@ function ROICalc() {
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={roiSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="currentColor" stopOpacity={0.35} />
@@ -349,7 +331,7 @@ function FloatingAssistant() {
         <div className="w-80 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
           <div className="px-4 py-3 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
             <div className="font-semibold">Trucent AI Assistant</div>
-            <button onClick={() => setOpen(false)} className="text-sm px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
+            <button onClick={() => setOpen(false)} className="text-sm px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800" aria-label="Close assistant">
               ×
             </button>
           </div>
@@ -397,13 +379,17 @@ function FloatingAssistant() {
 // ==========================================================
 export default function App() {
   const [dark, setDark] = useState(true);
+
+  // SSR-safe: only touch document in the browser
   useEffect(() => {
-    const root = document.documentElement;
-    if (dark) root.classList.add("dark");
-    else root.classList.remove("dark");
+    if (typeof document !== "undefined") {
+      const root = document.documentElement;
+      if (dark) root.classList.add("dark");
+      else root.classList.remove("dark");
+    }
   }, [dark]);
 
-  // Runtime sanity tests for computeROI (do not modify unless wrong)
+  // Runtime sanity tests for computeROI
   useEffect(() => {
     const approx = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol;
 
@@ -493,7 +479,7 @@ export default function App() {
         eyebrow="Tailored for Trucent"
         title={
           <>
-            Fluid Purification <span className="text-brand-blue">meets</span> Real‑Time Data
+            Fluid Purification <span className="text-brand-blue">meets</span> Real-Time Data
           </>
         }
         subtitle="A clickable prototype to demonstrate how an integrated website + client portal can accelerate Trucent's sales cycle, prove ROI with live KPIs, and strengthen customer loyalty."
@@ -530,7 +516,7 @@ export default function App() {
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart data={demoSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="currentColor" stopOpacity={0.35}/>
@@ -551,7 +537,7 @@ export default function App() {
             <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-4">
               <div className="font-semibold mb-2 flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-brand-blue"/> Compliance Snapshot</div>
               <ul className="text-sm space-y-1 text-zinc-700 dark:text-zinc-300">
-                <li>• ISO clean‑oil threshold: <span className="font-medium text-brand-green">PASS</span></li>
+                <li>• ISO clean-oil threshold: <span className="font-medium text-brand-green">PASS</span></li>
                 <li>• Discharge BOD/COD limits: <span className="font-medium text-brand-green">PASS</span></li>
                 <li>• Filter ΔP trend: <span className="font-medium">Stable</span></li>
                 <li>• Upcoming service: <span className="font-medium">Sep 12</span></li>
@@ -562,7 +548,7 @@ export default function App() {
               <div className="font-semibold mb-2 flex items-center gap-2"><LineChartIcon className="w-4 h-4 text-brand-blue"/> Uptime vs Waste</div>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={series}>
+                  <LineChart data={demoSeries}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2}/>
                     <XAxis dataKey="month"/>
                     <YAxis yAxisId="left"/>
@@ -584,7 +570,7 @@ export default function App() {
         id="cases"
         eyebrow="Proof"
         title="Clickable case studies"
-        subtitle="Drill into outcomes by industry. Each mini‑page can be exported as a one‑pager for sales or procurement due diligence."
+        subtitle="Drill into outcomes by industry. Each mini-page can be exported as a one-pager for sales or procurement due diligence."
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -598,11 +584,17 @@ export default function App() {
             },
             {
               name: "Metals – Oil Mist & Tramp Oil",
-              bullets: ["Air quality OSHA‑compliant", "Scrap value improved", "45% less unplanned downtime"],
+              bullets: ["Air quality OSHA-compliant", "Scrap value improved", "45% less unplanned downtime"],
             },
           ].map((c, i) => (
-            <motion.div key={i} initial={{opacity:0, y:10}} whileInView={{opacity:1, y:0}} viewport={{once:true}} transition={{delay:i*0.05}}
-              className="rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col">
+            <motion.div
+              key={i}
+              initial={{opacity:0, y:10}}
+              whileInView={{opacity:1, y:0}}
+              viewport={{once:true}}
+              transition={{delay:i*0.05}}
+              className="rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col"
+            >
               <div className="font-semibold mb-2">{c.name}</div>
               <ul className="text-sm text-zinc-700 dark:text-zinc-300 space-y-1 mb-4">
                 {c.bullets.map((b, j)=> <li key={j}>• {b}</li>)}
@@ -618,7 +610,7 @@ export default function App() {
         id="roi"
         eyebrow="Financials"
         title="ROI calculator"
-        subtitle="Adjust a few assumptions to generate payback, 12‑month ROI, and multi‑year NPV your buyers and CFOs care about."
+        subtitle="Adjust a few assumptions to generate payback, 12-month ROI, and multi-year NPV your buyers and CFOs care about."
       >
         <ROICalc />
       </Section>
@@ -627,7 +619,7 @@ export default function App() {
       <Section
         id="contact"
         eyebrow="Next Step"
-        title="Spin up a 2‑week pilot"
+        title="Spin up a 2-week pilot"
         subtitle="We’ll connect a demo portal to your selected asset (or sandbox data) and hand your sales team a live ROI story."
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -640,15 +632,15 @@ export default function App() {
               <li>• Discovery & KPI mapping (uptime, gallons, waste, CO₂e)</li>
               <li>• Branded web experience + client portal</li>
               <li>• Data hooks (CSV, API, PLC/IoT gateway optional)</li>
-              <li>• Sales one‑pager + ROI calculator</li>
+              <li>• Sales one-pager + ROI calculator</li>
               <li>• Handover & scale plan</li>
             </ul>
             <h3 className="font-semibold mt-6 mb-3">Security & scale</h3>
             <ul className="text-sm text-zinc-700 dark:text-zinc-300 space-y-2">
               <li>• SSO (Okta/Azure AD), RBAC, audit logs</li>
               <li>• Cloud native (AWS/Azure), IaC ready</li>
-              <li>• SOC2‑friendly processes and data isolation</li>
-              <li>• API‑first for future integrations (CRM/ERP)</li>
+              <li>• SOC2-friendly processes and data isolation</li>
+              <li>• API-first for future integrations (CRM/ERP)</li>
             </ul>
           </div>
         </div>
